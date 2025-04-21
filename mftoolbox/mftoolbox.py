@@ -1,4 +1,4 @@
-from gaussianprocess.gaussianprocess import GaussianProcess
+from gaussianprocess import GaussianProcess
 from sklearn.preprocessing import StandardScaler
 import numpy as np 
 
