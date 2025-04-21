@@ -1,5 +1,5 @@
 [project]
-name = "mf-toolbox"            # what users will pip install
+name = "mftoolbox"            # what users will pip install
 version = "0.1.0"
 description = "Multi-Fidelity Regression Toolbox"
 readme = "README.md"
