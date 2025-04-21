@@ -3,7 +3,7 @@ from sklearn.preprocessing import StandardScaler
 import numpy as np 
 
 class MultiFidelityRegressor:
-    def __init__(self, K, Ns, data_dict):
+    def __init__(self, data_dict):
         """
         For creating a multifidelity regressor object.
 
@@ -21,9 +21,17 @@ class MultiFidelityRegressor:
             at that fidelity-level. 
         """
         self.d = data_dict # Setting the data dictionary 
-        self.K = K # Setting the number of levels of fidelity 
-        self.Ns = Ns # A list of the data-sizes of each fidelity-level 
-        self.input_dim = self.d[0]['X'].shape[0] # Setting the input dimension        
+        self.K = len(data_dict)-1 # Setting the number of levels of fidelity 
+        self.Ns = [] # A list of the data-sizes of each fidelity-level 
+        self.input_dim = self.d[0]['X'].shape[1] # Setting the input dimension
+
+        # Setting data-sizes at each fidelity-level
+        for i in range(len(self.d)):
+            self.Ns.append(self.d[i]['X'].shape[1])
+
+        # Preprocessing training inputs and outputs
+        for fidelity, data in self.d.items():
+            self.d[fidelity]['N'] = data['X'].shape[0]
 
 class Kriging(MultiFidelityRegressor):
     def fit(self, sigma_guess = None, lr = 1e-6, max_iter = 500):
@@ -43,13 +51,11 @@ class Kriging(MultiFidelityRegressor):
         """
         # Assining a default sigma 
         if sigma_guess is None:
-            sigma_guess = 1e-4*np.ones(self.input_dim)
+            sigma_guess = 1e-6*np.ones(self.input_dim)
 
         # Training gaussian process 
-        model = GaussianProcess(double_precision=True)
-        model.fit(self.d[0]['X'], self.d[0]['Y'], sigma_guess)
-        model.optimize_kernel_params(sigma_guess, lr = lr, max_iter=max_iter)
-
+        model = GaussianProcess(double_precision=True, auto_scale = True)
+        model.fit(self.d[0]['X'], self.d[0]['Y'], sigma_guess, optimize_params = True, lr = lr, max_iter=max_iter)
         self.model = model 
 
     def predict(self, Xtest):
