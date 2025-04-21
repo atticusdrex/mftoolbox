@@ -1,5 +1,6 @@
-from gaussianprocess import * 
+from gaussianprocess.gaussianprocess import GaussianProcess
 from sklearn.preprocessing import StandardScaler
+import numpy as np 
 
 class MultiFidelityRegressor:
     def __init__(self, K, Ns, data_dict):
