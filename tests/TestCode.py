@@ -15,7 +15,7 @@ plt.rcParams.update({
 K = 2 
 
 # Define a list of sample sizes
-sample_sizes = [100, 25, 50]
+sample_sizes = [10, 25, 50]
 
 # Define the high and low-fidelity functions
 funcs = [
@@ -47,14 +47,15 @@ for k in range(K+1):
 
 
 # Creating multi-fidelity regressor object
-model = Kriging(d)
+model = NARGP(d)
 
-model.fit(np.ones(1)*1e-2, lr = 1e-1, max_iter = 100)
+model.fit(np.ones(1)*1e-2, lr = 1e-1, max_iter = 500)
 
 Yhat, Ystd = model.predict(Xtest)
 
 plt.figure(figsize=(10,4), dpi = 200)
-plt.plot(Xtest.ravel(), Yhat.ravel())
-plt.plot(Xtest.ravel(), Ytest.ravel())
+plt.plot(Xtest.ravel(), Yhat.ravel(), color = 'orange')
+plt.plot(Xtest.ravel(), Ytest.ravel(), color = 'black', linestyle = 'dotted')
+plt.fill_between(Xtest.ravel(), Yhat.ravel() - Ystd, Yhat.ravel() + Ystd, color = 'orange', alpha = 0.5)
 plt.grid()
 plt.show()
