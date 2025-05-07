@@ -55,7 +55,7 @@ class Kriging(MultiFidelityRegressor):
 
         # Training gaussian process 
         model = GaussianProcess(double_precision=True, auto_scale = True)
-        model.fit(self.d[0]['X'], self.d[0]['Y'], sigma_guess, optimize_params = True, lr = lr, max_iter=max_iter)
+        model.fit(self.d[0]['X'], self.d[0]['Y'], sigma_guess, noise_var = 1e-6, optimize_params = True, lr = lr, max_iter=max_iter)
         self.model = model 
 
     def predict(self, Xtest):
@@ -103,7 +103,7 @@ class AR1(MultiFidelityRegressor):
 
         # Training GPR on Lowest Fidelity Model
         model = GaussianProcess(double_precision=True, auto_scale = True)
-        model.fit(self.d[self.K]['X'], self.d[self.K]['Y'], sigma_guess)
+        model.fit(self.d[self.K]['X'], self.d[self.K]['Y'], sigma_guess, noise_var = 1e-6, optimize_params = True, lr = lr, max_iter=max_iter)
         self.model_params[self.K] = {
             'model':model
         }
@@ -121,7 +121,7 @@ class AR1(MultiFidelityRegressor):
 
             # Declaring GPR Model
             model = GaussianProcess(double_precision=True, auto_scale = True)
-            model.fit(self.d[k-1]['X'], delta, sigma_guess, optimize_params = True, lr = lr, max_iter=max_iter)
+            model.fit(self.d[k-1]['X'], delta, sigma_guess, noise_var = 1e-6, optimize_params = True, lr = lr, max_iter=max_iter)
             # Saving model parameters 
             self.model_params[k-1] = {
                 'rho':rho, 
@@ -181,7 +181,7 @@ class NARGP(MultiFidelityRegressor):
 
         # Training GPR on Lowest Fidelity Model
         model = GaussianProcess(double_precision=True, auto_scale = True, kernel_func = nargp_kernel)
-        model.fit(self.d[self.K]['X'], self.d[self.K]['Y'], sigma_guess, optimize_params = True, lr = lr, max_iter=max_iter)
+        model.fit(self.d[self.K]['X'], self.d[self.K]['Y'], sigma_guess, noise_var = 1e-6, optimize_params = True, lr = lr, max_iter=max_iter)
 
         # Store model to parameter dictionary
         self.model_params[self.K] = {
@@ -204,7 +204,7 @@ class NARGP(MultiFidelityRegressor):
 
             # Declaring GPR Model
             model = GaussianProcess(double_precision=True, auto_scale = True, kernel_func = nargp_kernel)
-            model.fit(train_inputs, yk1, sigma_guess, optimize_params = True, lr = lr, max_iter=max_iter)
+            model.fit(train_inputs, yk1, sigma_guess, noise_var = 1e-6, optimize_params = True, lr = lr, max_iter=max_iter)
 
             # Saving model parameters 
             self.model_params[k-1] = {
@@ -266,6 +266,8 @@ class Hyperkriging(MultiFidelityRegressor):
         # Initialize kernel parameter guess
         self.model_params = {}
 
+        sigma_guess = np.ones(self.d[self.K]['X'].shape[1]) * param_scale
+
         # Training GPR on Lowest Fidelity Model
         model = GaussianProcess(double_precision=True, auto_scale = True)
         model.fit(self.d[self.K]['X'], self.d[self.K]['Y'], sigma_guess, optimize_params = True, lr = lr, max_iter=max_iter)
@@ -286,7 +288,7 @@ class Hyperkriging(MultiFidelityRegressor):
             # Creating the feature-space progressively 
             for ki in range(k, self.K+1):
                 feature_list.append(
-                    self.d[ki]['Y'][:len(self.d[k-1]['Y'].ravel())].reshape(-1,11)
+                    self.d[ki]['Y'][:len(self.d[k-1]['Y'].ravel())].reshape(-1,1)
                 )
 
             # Vertically stack features 
@@ -297,11 +299,11 @@ class Hyperkriging(MultiFidelityRegressor):
             # train_inputs = scaler.fit_transform(train_inputs.T).T
 
             # Initialize kernel parameter guess
-            sigma_guess = param_scale*np.ones(train_inputs.shape[0])
+            sigma_guess = param_scale*np.ones(train_inputs.shape[1])
 
             # Declaring GPR Model
             model = GaussianProcess(double_precision=True, auto_scale = True)
-            model.fit(train_inputs,yk1, sigma_guess, optimize_params = True, lr = lr, max_iter=max_iter)
+            model.fit(train_inputs,yk1, sigma_guess, noise_var = 1e-6, optimize_params = True, lr = lr, max_iter=max_iter)
 
             # Saving model parameters 
             self.model_params[k-1] = {
@@ -333,10 +335,10 @@ class Hyperkriging(MultiFidelityRegressor):
 
         for k in reversed(range(1, self.K+1)):
             # Creating the progressive feature-space for the test data
-            input_list.insert(1, Yhat.reshape(1,-1))
+            input_list.insert(1, Yhat.reshape(-1,1))
 
             # Vertically concatenating the input features 
-            test_inputs = np.vstack(input_list)
+            test_inputs = np.hstack(input_list)
 
             # Making the model prediction at this fidelity-level 
             Yhat, std = self.model_params[k-1]['model'].predict(test_inputs, include_std = True)
